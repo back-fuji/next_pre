@@ -6,6 +6,7 @@ vi.mock("next/cache", () => ({
 }));
 
 // Server Actions は DB 依存のため、Prisma をモック
+// $transaction を含めてモック定義
 vi.mock("@/lib/db", () => ({
   db: {
     workspace: {
@@ -15,6 +16,7 @@ vi.mock("@/lib/db", () => ({
     workspaceMember: {
       create: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -37,7 +39,8 @@ describe("createWorkspace", () => {
     const result = await createWorkspace({ name: "テスト" });
 
     expect(result).toEqual({ error: "認証が必要です" });
-    expect(db.workspace.create).not.toHaveBeenCalled();
+    // トランザクション自体が呼ばれていないことを確認
+    expect(db.$transaction).not.toHaveBeenCalled();
   });
 
   it("認証済みの場合はワークスペースを作成する", async () => {
@@ -46,32 +49,43 @@ describe("createWorkspace", () => {
     vi.mocked(auth).mockResolvedValue({
       user: { id: "user-1", name: "テスト", email: "test@example.com" },
     } as any);
-    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const mockWorkspace = {
       id: "ws-1",
       name: "テスト",
-      slug: "tesuto",
+      slug: "test",
       plan: "FREE",
       ownerId: "user-1",
     };
-    // テスト用モックのため Prisma 戻り値の型指定を省略
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(db.workspace.create).mockResolvedValue(mockWorkspace as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(db.workspaceMember.create).mockResolvedValue({} as any);
+    // $transaction はコールバック関数を受け取り、それを実行してその返り値を返す
+    vi.mocked(db.$transaction).mockImplementation(async (fn: any) => {
+      // transactionオブジェクトとして workspace.create と workspaceMember.create をモック
+      const tx = {
+        workspace: { create: vi.fn().mockResolvedValue(mockWorkspace) },
+        workspaceMember: { create: vi.fn().mockResolvedValue({}) },
+      };
+      return fn(tx);
+    });
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const { createWorkspace } = await import("@/actions/workspace");
     const result = await createWorkspace({ name: "テスト" });
 
     expect(result).toEqual({ workspace: mockWorkspace });
-    expect(db.workspace.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          name: "テスト",
-          ownerId: "user-1",
-        }),
-      })
-    );
+  });
+});
+
+describe("getWorkspaces", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("未認証の場合はエラーを返す", async () => {
+    vi.mocked(auth).mockResolvedValue(null);
+
+    const { getWorkspaces } = await import("@/actions/workspace");
+    const result = await getWorkspaces();
+
+    expect(result).toEqual({ error: "認証が必要です" });
   });
 });

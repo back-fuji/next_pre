@@ -19,8 +19,12 @@ export default async function WorkspacePage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold">ワークスペース</h1>
 
+      {"error" in result && (
+        <p className="text-sm text-destructive">{result.error}</p>
+      )}
+
       {/* 既存ワークスペース一覧 */}
-      {"workspaces" in result && result.workspaces && result.workspaces.length > 0 && (
+      {"workspaces" in result && result.workspaces.length > 0 && (
         <div className="space-y-2">
           {result.workspaces.map((ws) => (
             <Card key={ws.id}>
