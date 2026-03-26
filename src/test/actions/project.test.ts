@@ -58,3 +58,34 @@ describe("createProject", () => {
     expect(result).toEqual({ project: mockProject });
   });
 });
+
+describe("getProjects", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("未認証の場合はエラーを返す", async () => {
+    vi.mocked(auth).mockResolvedValue(null);
+    const { getProjects } = await import("@/actions/project");
+    const result = await getProjects("ws-1");
+    expect(result).toEqual({ error: "認証が必要です" });
+  });
+
+  it("メンバーでない場合はエラーを返す", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as any);
+    vi.mocked(db.workspaceMember.findUnique).mockResolvedValue(null);
+
+    const { getProjects } = await import("@/actions/project");
+    const result = await getProjects("ws-1");
+    expect(result).toEqual({ error: "アクセス権限がありません" });
+  });
+
+  it("メンバーの場合はプロジェクト一覧を返す", async () => {
+    vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as any);
+    vi.mocked(db.workspaceMember.findUnique).mockResolvedValue({ role: "MEMBER" } as any);
+    const mockProjects = [{ id: "proj-1", name: "テスト", _count: { tasks: 0 } }];
+    vi.mocked(db.project.findMany).mockResolvedValue(mockProjects as any);
+
+    const { getProjects } = await import("@/actions/project");
+    const result = await getProjects("ws-1");
+    expect(result).toEqual({ projects: mockProjects });
+  });
+});
