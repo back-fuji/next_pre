@@ -4,18 +4,28 @@ import { createProject, deleteProject } from "@/actions/project";
 // GET 系は Route Handler 経由で TanStack Query を使いキャッシュ管理する
 // 変更系（create/delete）は Server Actions を直接 mutationFn に使う
 
+// プロジェクトの型定義（タスク数を含む）
+type Project = {
+  id: string;
+  name: string;
+  description: string | null;
+  _count: { tasks: number };
+};
+
 /**
  * プロジェクト一覧を取得するフック
+ * initialData を渡すことで SSR データをキャッシュの初期値として利用できる
  */
-export function useProjects(workspaceId: string) {
+export function useProjects(workspaceId: string, initialData?: Project[]) {
   return useQuery({
     queryKey: ["projects", workspaceId],
     queryFn: async () => {
       const response = await fetch(`/api/projects?workspaceId=${workspaceId}`);
       if (!response.ok) throw new Error("プロジェクト取得に失敗しました");
-      const data = await response.json() as { projects?: unknown[]; error?: string };
-      return data;
+      return response.json() as Promise<{ projects?: Project[]; error?: string }>;
     },
+    // SSR で取得した初期データをキャッシュの初期値として渡す
+    initialData: initialData ? { projects: initialData } : undefined,
   });
 }
 

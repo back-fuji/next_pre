@@ -23,21 +23,21 @@ export async function createProject(input: z.infer<typeof projectSchema>) {
   const parsed = projectSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.errors[0]?.message };
 
-  // RBAC: ADMIN のみプロジェクト作成可能
-  const member = await db.workspaceMember.findUnique({
-    where: {
-      userId_workspaceId: {
-        userId: session.user.id,
-        workspaceId: parsed.data.workspaceId,
-      },
-    },
-  });
-
-  if (member?.role !== "ADMIN") {
-    return { error: "プロジェクト作成には Admin 権限が必要です" };
-  }
-
   try {
+    // RBAC: ADMIN のみプロジェクト作成可能
+    const member = await db.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: session.user.id,
+          workspaceId: parsed.data.workspaceId,
+        },
+      },
+    });
+
+    if (member?.role !== "ADMIN") {
+      return { error: "プロジェクト作成には Admin 権限が必要です" };
+    }
+
     const project = await db.project.create({
       data: {
         name: parsed.data.name,
@@ -56,10 +56,23 @@ export async function createProject(input: z.infer<typeof projectSchema>) {
 /**
  * ワークスペース内のプロジェクト一覧を取得するServer Action
  * タスク数も一緒に取得する
+ * RBAC: ワークスペースメンバーのみアクセス可能
  */
 export async function getProjects(workspaceId: string) {
   const session = await auth();
   if (!session?.user?.id) return { error: "認証が必要です" };
+
+  // RBAC: ワークスペースメンバーのみアクセス可能
+  const member = await db.workspaceMember.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId: session.user.id,
+        workspaceId,
+      },
+    },
+  });
+
+  if (!member) return { error: "アクセス権限がありません" };
 
   try {
     const projects = await db.project.findMany({

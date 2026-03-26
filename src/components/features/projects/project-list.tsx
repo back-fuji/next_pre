@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateProjectDialog } from "./create-project-dialog";
+import { useProjects } from "@/hooks/use-projects";
 
 // プロジェクトの型定義（タスク数を含む）
 type Project = {
@@ -23,10 +24,15 @@ type Props = {
 
 /**
  * プロジェクト一覧を表示するクライアントコンポーネント
- * 初期データはSSRで取得し、ダイアログ経由で新規作成できる
+ * SSR データを initialData として渡し、作成・削除後に TanStack Query が自動再取得する
  */
 export function ProjectList({ initialProjects, workspaceId }: Props) {
   const [open, setOpen] = useState(false);
+  // SSR データを initialData として渡し、作成・削除後に自動再取得
+  const { data } = useProjects(workspaceId, initialProjects);
+  const projects: Project[] = (data && "projects" in data && Array.isArray(data.projects))
+    ? (data.projects as Project[])
+    : initialProjects;
 
   return (
     <div className="space-y-4">
@@ -36,7 +42,7 @@ export function ProjectList({ initialProjects, workspaceId }: Props) {
       </Button>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {initialProjects.map((project) => (
+        {projects.map((project) => (
           <Link key={project.id} href={`/projects/${project.id}`}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader>

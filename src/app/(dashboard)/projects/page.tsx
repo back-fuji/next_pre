@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
  */
 export default async function ProjectsPage() {
   const session = await auth();
-  if (!session?.user?.id) return null;
+  if (!session?.user?.id) redirect("/login");
 
   const workspaceId = await getCurrentWorkspaceId(session.user.id);
   if (!workspaceId) redirect("/workspace");
