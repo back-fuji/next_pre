@@ -70,7 +70,9 @@ describe("getProjects", () => {
   });
 
   it("メンバーでない場合はエラーを返す", async () => {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as any);
+    /* eslint-enable @typescript-eslint/no-explicit-any */
     vi.mocked(db.workspaceMember.findUnique).mockResolvedValue(null);
 
     const { getProjects } = await import("@/actions/project");
@@ -79,10 +81,12 @@ describe("getProjects", () => {
   });
 
   it("メンバーの場合はプロジェクト一覧を返す", async () => {
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as any);
     vi.mocked(db.workspaceMember.findUnique).mockResolvedValue({ role: "MEMBER" } as any);
     const mockProjects = [{ id: "proj-1", name: "テスト", _count: { tasks: 0 } }];
     vi.mocked(db.project.findMany).mockResolvedValue(mockProjects as any);
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     const { getProjects } = await import("@/actions/project");
     const result = await getProjects("ws-1");
