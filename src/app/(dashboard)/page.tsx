@@ -39,7 +39,7 @@ export default async function DashboardPage() {
         done={stats.done}
         inProgress={stats.inProgress}
         completionRate={stats.completionRate}
-        _projectCount={stats.projectCount}
+        projectCount={stats.projectCount}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

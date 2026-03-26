@@ -6,8 +6,7 @@ type Props = {
   done: number;
   inProgress: number;
   completionRate: number;
-  /** 将来利用のために保持（現在は表示に未使用） */
-  _projectCount?: number;
+  projectCount: number;
 };
 
 export function StatsCards({ total, done, inProgress, completionRate }: Props) {
