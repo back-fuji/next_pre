@@ -31,7 +31,8 @@ export async function POST(req: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const workspaceId = session.metadata?.workspaceId;
 
-        if (workspaceId) {
+        // サブスクリプションモードで支払い完了の場合のみ更新
+        if (workspaceId && session.payment_status === "paid") {
           await db.workspace.update({
             where: { id: workspaceId },
             data: { plan: "PRO" },

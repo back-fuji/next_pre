@@ -70,7 +70,12 @@ export async function createPortalSession(workspaceId: string) {
     where: { id: workspaceId },
   });
 
-  if (!workspace?.stripeCustomerId) {
+  // オーナーのみポータルにアクセス可能
+  if (!workspace || workspace.ownerId !== session.user.id) {
+    return { error: "権限がありません" };
+  }
+
+  if (!workspace.stripeCustomerId) {
     return { error: "Stripe Customer が見つかりません" };
   }
 
