@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { TaskStatus } from "@prisma/client";
+import { Priority, TaskStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
 import { KanbanColumn } from "./kanban-column";
 import { CreateTaskDialog } from "./create-task-dialog";
@@ -13,7 +13,7 @@ type Task = {
   title: string;
   description: string | null;
   status: TaskStatus;
-  priority: string;
+  priority: Priority;
   assignee: { name: string | null; image: string | null } | null;
   dueDate: Date | null;
 };
@@ -63,7 +63,6 @@ export function KanbanBoard({ tasks, projectId }: Props) {
             status={col.status}
             label={col.label}
             tasks={tasksByStatus[col.status] ?? []}
-            projectId={projectId}
           />
         ))}
       </div>

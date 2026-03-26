@@ -28,6 +28,19 @@ export default async function ProjectKanbanPage({ params }: Props) {
 
   if (!project) notFound();
 
+  // ワークスペースメンバーシップを確認（認可）
+  const member = await db.workspaceMember.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId: session.user.id,
+        workspaceId: project.workspaceId,
+      },
+    },
+  });
+
+  // 権限なしは存在しないとして扱う
+  if (!member) notFound();
+
   return (
     <div className="space-y-4">
       <div>

@@ -1,4 +1,4 @@
-import { TaskStatus } from "@prisma/client";
+import { Priority, TaskStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { KanbanCard } from "./kanban-card";
 
@@ -8,7 +8,7 @@ type Task = {
   title: string;
   description: string | null;
   status: TaskStatus;
-  priority: string;
+  priority: Priority;
   assignee: { name: string | null; image: string | null } | null;
   dueDate: Date | null;
 };
@@ -17,7 +17,6 @@ type Props = {
   status: TaskStatus;
   label: string;
   tasks: Task[];
-  projectId: string;
 };
 
 // ステータス別の背景色定義

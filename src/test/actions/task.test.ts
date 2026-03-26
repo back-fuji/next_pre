@@ -7,6 +7,7 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       delete: vi.fn(),
       findMany: vi.fn(),
+      findUnique: vi.fn(),
     },
     project: {
       findUnique: vi.fn(),
@@ -36,6 +37,15 @@ describe("updateTaskStatus", () => {
   it("タスクのステータスを更新できる", async () => {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     vi.mocked(auth).mockResolvedValue({ user: { id: "user-1" } } as any);
+    // 認可チェック用: タスクとプロジェクト情報を返す
+    vi.mocked(db.task.findUnique).mockResolvedValue({
+      id: "t-1",
+      project: { workspaceId: "ws-1" },
+    } as any);
+    // 認可チェック用: ワークスペースメンバーを返す
+    vi.mocked(db.workspaceMember.findUnique).mockResolvedValue({
+      role: "MEMBER",
+    } as any);
     vi.mocked(db.task.update).mockResolvedValue({
       id: "t-1",
       status: "DONE",

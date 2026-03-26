@@ -26,6 +26,24 @@ export async function createTask(input: z.infer<typeof createTaskSchema>) {
   if (!parsed.success) return { error: parsed.error.errors[0]?.message };
 
   try {
+    // プロジェクトの存在とワークスペースメンバーシップを確認
+    const project = await db.project.findUnique({
+      where: { id: parsed.data.projectId },
+    });
+
+    if (!project) return { error: "プロジェクトが見つかりません" };
+
+    const member = await db.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: session.user.id,
+          workspaceId: project.workspaceId,
+        },
+      },
+    });
+
+    if (!member) return { error: "アクセス権限がありません" };
+
     const task = await db.task.create({
       data: {
         title: parsed.data.title,
@@ -59,6 +77,25 @@ export async function updateTaskStatus({
   if (!session?.user?.id) return { error: "認証が必要です" };
 
   try {
+    // タスクからプロジェクト・ワークスペースを取得して認可チェック
+    const existingTask = await db.task.findUnique({
+      where: { id: taskId },
+      include: { project: true },
+    });
+
+    if (!existingTask) return { error: "タスクが見つかりません" };
+
+    const member = await db.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: session.user.id,
+          workspaceId: existingTask.project.workspaceId,
+        },
+      },
+    });
+
+    if (!member) return { error: "アクセス権限がありません" };
+
     const task = await db.task.update({
       where: { id: taskId },
       data: { status },
@@ -80,8 +117,26 @@ export async function deleteTask(taskId: string) {
   if (!session?.user?.id) return { error: "認証が必要です" };
 
   try {
-    const task = await db.task.delete({ where: { id: taskId } });
-    revalidatePath(`/projects/${task.projectId}`);
+    const existingTask = await db.task.findUnique({
+      where: { id: taskId },
+      include: { project: true },
+    });
+
+    if (!existingTask) return { error: "タスクが見つかりません" };
+
+    const member = await db.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: session.user.id,
+          workspaceId: existingTask.project.workspaceId,
+        },
+      },
+    });
+
+    if (!member) return { error: "アクセス権限がありません" };
+
+    await db.task.delete({ where: { id: taskId } });
+    revalidatePath(`/projects/${existingTask.projectId}`);
     return { success: true };
   } catch {
     return { error: "タスクの削除に失敗しました" };
@@ -96,6 +151,23 @@ export async function getTasks(projectId: string) {
   if (!session?.user?.id) return { error: "認証が必要です" };
 
   try {
+    const project = await db.project.findUnique({
+      where: { id: projectId },
+    });
+
+    if (!project) return { error: "プロジェクトが見つかりません" };
+
+    const member = await db.workspaceMember.findUnique({
+      where: {
+        userId_workspaceId: {
+          userId: session.user.id,
+          workspaceId: project.workspaceId,
+        },
+      },
+    });
+
+    if (!member) return { error: "アクセス権限がありません" };
+
     const tasks = await db.task.findMany({
       where: { projectId },
       include: { assignee: true },

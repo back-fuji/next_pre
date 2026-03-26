@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TaskStatus } from "@prisma/client";
+import { Priority, TaskStatus } from "@prisma/client";
 import { updateTaskStatus } from "@/actions/task";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,13 +19,13 @@ type Task = {
   title: string;
   description: string | null;
   status: TaskStatus;
-  priority: string;
+  priority: Priority;
   assignee: { name: string | null } | null;
   dueDate: Date | null;
 };
 
-// 優先度に対応するBadgeのvariant定義（型安全に管理）
-const priorityVariants: Record<string, "destructive" | "secondary" | "outline"> = {
+// 優先度に対応するBadgeのvariant定義（Priority enumで型安全に管理）
+const priorityVariants: Record<Priority, "destructive" | "secondary" | "outline"> = {
   HIGH: "destructive",
   MEDIUM: "secondary",
   LOW: "outline",
@@ -57,7 +57,7 @@ export function KanbanCard({ task }: { task: Task }) {
         )}
         <div className="flex items-center justify-between">
           <Badge
-            variant={priorityVariants[task.priority] ?? "secondary"}
+            variant={priorityVariants[task.priority]}
             className="text-xs"
           >
             {task.priority}
